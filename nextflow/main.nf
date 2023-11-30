@@ -73,9 +73,8 @@ workflow {
     fastqs = cram_to_fastq(crams)
 
     // Align the reads
-    fastqs.combine(ref_index) | view
     aligned = align_fastq(fastqs.combine(ref_index))
 
-    // aligned | view
+    aligned | view
 }
 
