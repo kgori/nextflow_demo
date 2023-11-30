@@ -62,6 +62,8 @@ process merge_alignments {
     """
 }
 
+include { depth } from "./modules/depth.nf"
+
 workflow {
     println("Running workflow")
     // Make new channels from input data
@@ -80,6 +82,10 @@ workflow {
 
     // Merge the alignments
     merged = merge_alignments("365H-Dog", aligned.collect())
-    merged | view
+
+    // Calculate depth
+    dp = depth(ref_to, merged)
+    dp | view
 }
+
 
