@@ -69,6 +69,9 @@ workflow {
     // Index the reference
     ref_index = index_reference(ref_from.concat(ref_to))
 
-    ref_index | view
+    // Extract the reads
+    fastqs = cram_to_fastq(crams)
+
+    fastqs | view
 }
 
