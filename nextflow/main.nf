@@ -8,7 +8,7 @@ process index_reference {
     path(reference)
 
     output:
-    path("${reference}.*")
+    tuple path("${reference}"), path("${reference}.*")
 
     script:
     """
@@ -22,7 +22,7 @@ process cram_to_fastq {
     tuple val(id), path(cramfile)
 
     output:
-    tuple val(id), path("${id}_1.fastq.gz"), path("${id}_2.fastq.gz")
+    tuple val(id), path("${id}_{1,2}.fastq.gz")
 
     script:
     """
@@ -32,14 +32,14 @@ process cram_to_fastq {
 
 process align_fastq {
     input:
-    tuple val(id), path(fastq1), path(fastq2), path(reference)
+    tuple val(id), path(fastq), path(reference), path(index)
 
     output:
     path("${id}.bam")
 
     script:
     """
-    bwa mem -Y ${reference} ${fastq1} ${fastq2} |\
+    bwa mem -Y ${reference} ${fastq} |\
       samtools sort |\
       samtools view -O CRAM -T ${reference} -o ${id}.bam
     """
@@ -67,11 +67,15 @@ workflow {
     crams = Channel.fromFilePairs("${params.inputDir}/*.cram{,.crai}", checkIfExists: true)
 
     // Index the reference
-    ref_index = index_reference(ref_from.concat(ref_to))
+    ref_index = index_reference(ref_to)
 
     // Extract the reads
     fastqs = cram_to_fastq(crams)
 
-    fastqs | view
+    // Align the reads
+    fastqs.combine(ref_index) | view
+    aligned = align_fastq(fastqs.combine(ref_index))
+
+    // aligned | view
 }
 
