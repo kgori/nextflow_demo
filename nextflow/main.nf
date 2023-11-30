@@ -19,14 +19,14 @@ process index_reference {
 
 process cram_to_fastq {
     input:
-    tuple val(id), path(cramfile), path(cramindex)
+    tuple val(id), path(cramfile)
 
     output:
-    tuple val(${id}), path("${id}_1.fastq.gz"), path("${id}_2.fastq.gz")
+    tuple val(id), path("${id}_1.fastq.gz"), path("${id}_2.fastq.gz")
 
     script:
     """
-    samtools fastq -1 ${id}_1.fastq.gz -2 ${id}_2.fastq.gz -0 /dev/null -s /dev/null -n ${cramfile}
+    samtools fastq -1 ${id}_1.fastq.gz -2 ${id}_2.fastq.gz -0 /dev/null -s /dev/null -n ${cramfile[0]}
     """
 }
 
@@ -62,12 +62,13 @@ process merge_alignments {
 workflow {
     println("Running workflow")
     // Make new channels from input data
-    ref_from = Channel.fromPath("${params.from_reference}")
-    ref_to = Channel.fromPath("${params.to_reference}")
-    crams = Channel.fromFilePairs("${params.inputDir}/*.cram{,.crai}")
+    ref_from = Channel.fromPath("${params.from_reference}", checkIfExists: true)
+    ref_to = Channel.fromPath("${params.to_reference}", checkIfExists: true)
+    crams = Channel.fromFilePairs("${params.inputDir}/*.cram{,.crai}", checkIfExists: true)
 
-    ref_from | view
-    ref_to | view
-    crams | view
+    // Index the reference
+    ref_index = index_reference(ref_from.concat(ref_to))
+
+    ref_index | view
 }
 
