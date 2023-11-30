@@ -47,14 +47,17 @@ process align_fastq {
 
 process merge_alignments {
     input:
-    tuple val(name), path(bamfiles)
+    val(name)
+    path(bamfiles)
 
     output:
     path("${name}.bam*")
 
+    publishDir "${params.outputDir}", mode: 'copy'
+
     script:
     """
-    samtools merge ${name}.bam ${bamfiles}
+    samtools merge -o ${name}.bam ${bamfiles}
     samtools index ${name}.bam
     """
 }
@@ -75,6 +78,8 @@ workflow {
     // Align the reads
     aligned = align_fastq(fastqs.combine(ref_index))
 
-    aligned | view
+    // Merge the alignments
+    merged = merge_alignments("365H-Dog", aligned.collect())
+    merged | view
 }
 
